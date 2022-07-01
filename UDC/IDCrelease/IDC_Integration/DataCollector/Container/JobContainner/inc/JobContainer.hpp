@@ -6,7 +6,7 @@
 #include <time.h>
 #include <memory>
 #include <unistd.h>
-#include "../Job.hpp"
+#include "Job.hpp"
 using namespace std;
 
 namespace JobInstanceHandler

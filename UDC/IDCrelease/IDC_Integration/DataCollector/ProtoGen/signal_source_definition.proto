@@ -1,0 +1,376 @@
+// ###########################################
+// Unified Data Collector Request Format
+// Version 1.0
+// ###########################################
+
+// Google Protocol Buffers Version 3.
+syntax = "proto3";
+
+// Package name.
+package signal_source_definition;
+
+message DefaultSource {
+    // Data field signal name
+    // Required
+    string signal_name = 1;
+}
+
+message CollectdSource{
+
+		enum CommandTypeEnum
+		{
+			Undefined = 0;
+			Getval = 1;
+			Listval =2;
+			
+		}
+	CommandTypeEnum commandtype = 1;
+	string identifier = 2;
+	string DataSourceName = 3;//added by Hari to identify the source from number of sources in Datapoint message
+	}
+	
+message EELSource{                           // Source name can be changed further to make this more generic and not only EEL specific
+	
+	string absolute_directory_path = 1;      // directory path where the target file is or will available
+	
+	oneof file_name
+	{
+		string exact_filename = 2;            // exact name of the file to be captured
+		string regex_filename = 3;            // pattern for file search, first option from search will be captured
+		
+	}
+	
+	string file_type = 4;                      // file type 
+}
+			
+
+message CanSource {
+    // Source of signal (e.g. MAIN_STAR_3, STAR_2_3_CHASSIS_FlexRay)
+    // Required
+    string source_name = 1;
+
+    // Signal version (e.g. 2019_29a for STAR_2_3_CHASSIS_FlexRay_2019_29a)
+    // Required
+    string source_version = 2;
+
+    // Data field frame name
+    // Required
+    string frame_name = 3;
+
+    // Data field signal name
+    // Required
+    string signal_name = 4;
+}
+
+message LinSource {
+    // Source of signal (e.g. MAIN_STAR_3, STAR_2_3_CHASSIS_FlexRay)
+    // Required
+    string source_name = 1;
+
+    // Signal version (e.g. 2019_29a for STAR_2_3_CHASSIS_FlexRay_2019_29a)
+    // Required
+    string source_version = 2;
+
+    // Data field frame name
+    // Required
+    string frame_name = 3;
+
+    // Data field signal name
+    // Required
+    string signal_name = 4;
+}
+
+message EthernetSource {
+    // Source of signal (e.g. MAIN_STAR_3, STAR_2_3_CHASSIS_FlexRay)
+    // Required
+    string source_name = 1;
+
+    // Signal version (e.g. 2019_29a for STAR_2_3_CHASSIS_FlexRay_2019_29a)
+    // Required
+    string source_version = 2;
+
+    // VLAN ID
+    // Required
+    uint32 vlan_id = 3;
+
+    // Data field frame name
+    // Required
+    string frame_name = 4;
+
+    // Data field signal name
+    // Required
+    string signal_name = 5;
+}
+
+
+//Interpreted value = ((numerator_linear_factor * raw_value) +( numerator_offset))/denominator_offset;
+message Scaling
+{
+	double numerator_linear_factor = 1;
+
+	double numerator_offset = 2;
+		
+	double denominator_offset = 3;
+		
+}
+
+message NetworkSource  {    
+
+    uint32 service_id = 1;       
+
+    string service_name = 2;     
+
+    repeated EventGroup event_group = 3;  
+
+    uint32 event_id = 4;
+
+    string event_name = 5 ;
+
+    string pdu_name = 6;
+
+    string signal_group_name  = 7 ;
+
+    string signal_name = 8;
+
+    repeated Element element_path = 9 ; 
+
+    // Flag for ineterpreatation
+    bool scaling = 10;
+                
+    //This field is valid only if raw_value is FALSE 
+    Scaling scaling_values = 11;
+    //Civic Specific
+    SternbildAPI sternbild_api = 12;
+
+}
+
+message EventGroup{
+	
+	uint32 event_group_id = 1;
+	
+	string event_group_name = 2;
+}
+
+message Element{ 
+
+	int32 index = 1;
+
+	uint32 sequence_number = 2;
+
+	string name = 3;
+
+}
+
+message SternbildAPI{
+
+    //Sternbuild service name derived from the Mapping of Sterbuild xml doc and XDIS json export
+    string sternbild_service_name = 1;     
+    
+    //Sternbuild service name derived from the Mapping of Sterbuild xml doc and XDIS json export
+    string sternbild_signal_group_name  = 2 ;
+ 
+	//Sternbuild service name derived from the Mapping of Sterbuild xml doc and XDIS json export
+	string sternbild_event_name = 3 ;
+
+}
+
+
+
+message InternalSource {
+    // Source of signal (e.g. MAIN_STAR_3, STAR_2_3_CHASSIS_FlexRay)
+    // Required
+    string source_name = 1;
+
+    // Signal version (e.g. 2019_29a for STAR_2_3_CHASSIS_FlexRay_2019_29a)
+    // Required
+    string source_version = 2;
+
+    // Data field signal name
+    // Required
+    string signal_name = 3;
+}
+
+message ProcessingToolboxSource {
+    // Processing Toolbox ID. This is the source of signal (e.g. Histogram_app_vehicleSpeed).
+    // Required
+    string toolbox_id = 1;
+
+    // Processing Toolbox version.
+    // Optional
+    string toolbox_version = 2;
+
+    // Format name. If the used data type/format is a complex type (e.g. protobuf), the format name can be provided here. (e.g. Histogram.proto)
+    // Optional
+    string format_name = 3;
+
+    // Format version. If the used data type/format is a complex type (e.g. protobuf), the format version can be provided here.
+    // Optional
+    string format_version = 4;
+
+    // Data field signal name
+    // Required
+    string signal_name = 5;
+	
+	// Toolbox metadata
+	repeated ToolMetadata tool_metadata = 6;
+	
+
+}
+
+message ToolMetadata
+{
+	enum INPUTCONFIG
+	{
+		// Used when all input data is at same frequency
+		// All parameters needed in the toolbox data injection
+		// If any parameter is SNA/Invalid the entire injection is discarded
+		
+		TYPE_A = 0;
+		
+		// Used when all input data is at same frequency
+		// All parameters needed in the toolbox data injection
+		// If any parameter is SNA/Invalid Default/dummy value/empty is used 
+		
+		TYPE_B = 1;
+		
+		// Used when all input data is at same frequency
+		// All parameters needed in the toolbox data injection
+		// the data injection is incomplete until all parameters are filled with valid value
+		// Consequetive valid values for any parameter will be captured as a seperate/new data injection
+		
+		TYPE_C = 2;
+		
+		// Used when all input data is at same frequency
+		// All parameters needed in the toolbox data injection
+		// the data injection is incomplete until all parameters are filled with valid value
+		// Consequetive valid values of parameters will be replaced in the first injection waiting for all valid values
+		
+		TYPE_D = 3;
+			
+		
+	}
+	
+	enum FAILSAFE
+	{
+		UNDEFINED  = 0;
+		SKIP = 1;
+		CAPTURE_RAW = 2;
+	}
+	//
+	//Part of toolbox configuration 
+	// present in data Registry
+	string dpj_id = 1;
+	// Data Point representation in the data Registry
+	string named_output = 2 ;
+	
+	//
+	int32 output_id = 3 ;
+	
+	INPUTCONFIG input_config = 4;
+	
+	SamplingRate sampling_rate = 5;
+	// failsafe_enabled is used to engage the fail safe mechanism in case the processing tool can not be accessed under any circumstances
+	// when set to true and the corresponding tool is unable to operate/perform UDC shall capture the input parameters ofr this toolbox data point and package them as standard data points
+	FAILSAFE failsafe_option = 6;
+}
+
+
+message SamplingRate
+{
+	oneof sampling_rate
+	{
+		uint32 sampling_rate_time_ms = 1;
+		uint32 sampling_rate_injection_count = 2;
+	}
+}
+
+
+
+message ThriftmeSource {
+    // To identify thrift service
+    // Required
+    int32 service_hash_id = 1;
+
+    // To identify thrift method or event
+    // Required
+    int32 function_id = 2;
+
+    // To identify thrift service
+    // Required
+    string service_name = 3;
+
+    // To identify thrift method or event
+    // Required
+    string function_name = 4;
+
+    // To identify what type of method calls to log(Method call, event, one way)
+    // Required
+    enum MessageTypeEnum {
+        THRIFTME_CALL = 0;
+        THRIFTME_REPLY = 1;
+        THRIFTME_EXCEPTION = 2;
+        THRIFTME_ONEWAY = 3;
+        THRIFTME_EVENT = 4;
+    }
+    MessageTypeEnum message_type = 5;
+}
+
+
+// The Source definition gropus different members that are to collected from a thriftme FunctionCall 
+// The grouping is based on Service_hash_id,Broker_URL,function_id , Parameters and triggers for data point collection
+
+message ThriftmeSourceActive {           
+
+string service_name = 1; 
+
+int32 service_hash_id = 2;
+
+string broker_url = 3; 
+
+string function_name = 4; 
+
+int32 function_id = 5; 
+
+repeated DataMembers  member = 6;
+
+repeated Parameters parameter = 7;
+
+}
+
+
+message Parameters
+{
+	string parameter_name  = 1;
+	oneof parameter_value
+	{
+        double double_value = 2;
+        float float_value = 3;
+        int32 int32_value = 4;
+        int64 int64_value = 5;
+        uint32 uint32_value = 6;
+        uint64 uint64_value = 7;
+        sint32 sint32_value = 8;
+        sint64 sint64_value = 9;
+        fixed32 fixed32_value = 10;
+        fixed64 fixed64_value = 11;
+        sfixed32 sfixed32_value = 12;
+        sfixed64 sfixed64_value = 13;
+        bool bool_value = 14;
+        string string_value = 15;
+        bytes bytes_value = 16;
+   }
+
+}
+
+message DataMembers
+{
+	string slug = 1;
+	string member_name = 2;
+	
+}
+
+
+
+
+
+

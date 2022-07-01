@@ -1,0 +1,314 @@
+// ###########################################
+// Unified Data Collector Request Format
+// Version 1.1
+// ###########################################
+
+// Google Protocol Buffers Version 3.
+syntax = "proto3";
+import "data_collection_configuration_request.proto";
+//import "static_config_udc_civic.proto";
+
+
+
+
+
+message MessageHeader
+{
+	
+	enum Message_Type    
+	{
+		
+		JOB_STATUS  = 0;
+		JOB_STATUS_REQUEST = 1;
+		INITIATE_GEO_HASH_STREAM = 2;
+		GEO_HASH = 3;
+		JOB_LIST = 4;
+		JOB_STATUS_ACK  = 5;
+		JOB_STATUS_REQUEST_ACK = 6;
+		INITIATE_GEO_HASH_STREAM_ACK = 7;
+		GEO_HASH_ACK = 8;
+		JOB_LIST_ACK = 9;
+		GET_STATIC_CONFIG = 10;
+		STATIC_CONFIG = 11;    
+		GET_DATA_COLLECTION_JOB = 12;      /// CHECK FOR NAME ?
+								
+				
+	}
+	
+	
+	enum Compression_Type
+	{
+		NO_COMPRESSION = 0;
+		GZIP_COMPRESSION = 1;
+	}
+	
+	enum Ecu_Type
+	{
+		CIVIC = 0;
+		IDC = 1;
+		CU = 2;
+			
+	}
+	
+	//protocol verision information 
+	int32 protocol_version_major = 1;
+	
+	//protocol verison information
+	int32 protocol_version_minor = 2;
+	
+	
+	// depending upon the type of message the appropriate enum shall be mentioned
+	Message_Type message_type = 3;
+	
+	//size of the payload
+	uint32 payload_size_byte = 4;
+	
+	// defines the compression type of the message
+	Compression_Type transmission_compression = 5;
+	
+	// this can be a series generated number which is uniques per message ( non acknowledgement) per application life cycle,
+   //the acknowledgement message uses this field to identify the message for which the acknowledgement is being sent 
+	int32 sequence_nb = 6;
+	
+	//Target/Source ECU
+	Ecu_Type ecu = 7;
+
+}
+
+
+message MessageBody {
+
+	oneof message_body
+	{
+				
+		// Provides the status of current jobs available onboard in various states ( Invalid, Terminated, Paused, Active)
+		JobStatusMessage job_status = 1;
+		
+        // requests the status of current jobs available onboard in various states ( Invalid, Terminated, Paused, Active)
+		JobStatusRequestMessage job_status_request = 2;
+		
+		//request to start or stop streaming geo has from Onboard to backend
+		InitiateGeohashStreamMessage initiate_geohash_stream  = 3;
+		
+		//geo hash string
+		GeoHashMessage geo_hash = 4;
+					
+		//Main downlink message
+        DataCollectionJobsListMessage  data_collection_jobs_list = 5;
+		// It gives the status on application level if the message was received and parsed  sucessfully by backend or Onboard.
+		AckMessage jobstatus_ack = 6;
+		
+		AckMessage job_status_request_ack = 7;
+
+		AckMessage initiate_geohash_ack = 8;
+		
+		AckMessage geohash_stream_ack = 9;
+		
+	    AckMessage datacollection_job_ack = 10;
+		
+		GetStaticConfigMessage get_static_config = 11;
+		
+		StaticConfigMessage static_config =12;
+		
+		GetDataCollectionJobsMessage get_data_collection_jobs =13;
+								
+		
+	}
+	
+  
+}
+
+message AckMessage
+{
+	enum Status_Code
+	{
+		FAILED = 0;
+		OK = 1;
+	}
+
+	Status_Code status = 1;
+}
+message JobStatusMessage
+{
+    // defines if the status message is delta (change from last update ) or complete status information
+	Content_Type content_type = 1;
+	
+	repeated Job dc_job = 2;
+	int32 max_supported_jobs = 3;
+		
+}
+message JobStatusRequestMessage
+{
+	// defines if the status message is delta (change from last update ) or complete status information
+	Content_Type content_type = 1;
+}
+
+message InitiateGeohashStreamMessage
+{
+	bool enabled = 1;
+	repeated GeohashStreamArea areas = 2;
+}
+
+message GeohashStreamArea
+{
+      int32 precision = 1;
+      CompositeLocationArea geo_area = 2;
+}
+
+
+message GeoHashMessage{
+	
+	string geo_hash_value =1;
+	
+}
+message Job{
+
+	string job_id = 1;
+	JobStatus job_status = 2;
+	JobStatusReason reason  = 3; 
+	
+	JobStatistics job_statistics = 4;
+	repeated JobWarnings job_warnings = 5;
+	uint64 utc_timestamp_ms = 6;
+	
+}
+
+message JobStatusReason
+{
+	enum Reason
+	{
+		PARSING_ERROR = 0;
+
+		INCORRECT_FIELD_VALUE = 1;
+
+		VERSION_MISMATCH = 2;
+		
+		TERMINATION_CONDITION_MET = 3;
+		
+		TERMINATED_BY_DCM = 4;
+		
+		RECEIVED_NEW = 5;
+		
+		ACTIVE_CONDITION_MET = 6;
+		
+		PAUSE_CONDITION_MET = 7;
+	}
+	Reason reason =1;
+	string detail = 2;
+
+	
+}
+
+message JobWarnings
+{
+	enum Warnings
+	{
+		SIGNAL_NOT_FOUND = 0;
+	}
+	
+	Warnings warning = 1;
+	string detail = 2;
+	uint64 utc_timestamp_ms = 3;
+	
+}
+
+message JobStatistics
+{
+	
+	int32 driven_km = 1;
+	int32 driven_time = 2;
+	int32 num_Of_uploaded_files = 3;
+	uint64 utc_timestamp_ms = 4;
+	
+}
+
+
+message JobStatus
+{
+	enum Job_Status
+	{
+		ACTIVE = 0;
+		PAUSED = 1;
+		TERMINATED = 2;
+		INVALID = 3;
+	}
+	Job_Status job_status = 1;
+	uint64 utc_timestamp_ms = 2;
+}
+	
+
+message GeoCoordinateArea
+{
+	double latitude_deg = 1;
+	double longitude_deg = 2;
+}
+
+message GeoRectangleArea
+{
+	GeoCoordinateArea top_left = 1;
+	GeoCoordinateArea bottom_right = 2;
+}
+
+message GeoCircleArea
+{
+	GeoCoordinateArea center = 1;
+	double radius_m = 2;
+}
+
+message CompositeLocationArea                     // can be same name as data collection configuration format , when using just field name only local definitions are refrenced
+{
+	repeated GeoCircleArea geo_circles = 1;
+	repeated GeoRectangleArea geo_rectangles = 2;
+}
+
+enum Content_Type
+	{
+		FULL = 0;
+
+		DELTA = 1;
+	}
+	
+message GetStaticConfigMessage
+{
+	string udc_version = 1 ;   /// required field 
+	string supported_job_format_version = 2 ;  /// required field 
+	string supported_upload_format_version = 3; /// optional field 
+	repeated SupportedSourceVersion supported_source_version = 4;
+	
+}
+
+message GetDataCollectionJobsMessage
+{
+	int32 max_supported_jobs = 1;
+}
+
+	
+message DataCollectionJobsListMessage
+{
+	repeated data_collection_configuration_request.DataCollectionJob new_jobs =1;
+	repeated string job_ids_to_terminate =2;
+
+	
+}
+
+message StaticConfigMessage
+{
+	//static_config_udc_civic.StaticConfig static_config = 1;
+}
+
+
+enum Source_Type
+{
+	UNDEFINED = 0;
+	SOME_IP = 1;
+	THRIFTME_PASSIVE = 2;
+	THRIFTME_ACTIVE = 3;
+}
+
+message SupportedSourceVersion
+{
+	Source_Type source_type = 1;
+	string ecu = 2;
+	string version = 3; 
+}
+

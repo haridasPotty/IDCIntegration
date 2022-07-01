@@ -9,11 +9,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <thread>
+
 #include "JobContainer.hpp"
 #include "DataCollection.hpp"
 //#include "TimerHandler.hpp"
-#include "../Job.hpp"
-#include "../Parser.hpp"
+#include "Job.hpp"
+#include "Parser.hpp"
 #include "CommManager.h"
 using namespace std;
 

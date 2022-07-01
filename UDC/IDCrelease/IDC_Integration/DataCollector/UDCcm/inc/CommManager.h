@@ -2,7 +2,7 @@
 #define COMMN_MANAGER_HPP
 #include <memory.h>
 #include <csignal>
-#include "../comm.h"
+#include "comm.h"
 #include <mutex>
 
 

@@ -40,7 +40,7 @@ unique_ptr<StateMachine2>ModeSelector ::onEvent(States state){
 
 unique_ptr<StateMachine2>ConfigManager ::onEvent(States state){ 
     std::cout << "ConfigManager\n";
-   static  ReqParser reqpObj;
+     ReqParser reqpObj;
     if (reqpObj.CheckForNewRequest() != true){
         return make_unique<DataCollector>();
     }
@@ -119,13 +119,16 @@ unique_ptr<StateMachine2>PollingState ::onEvent(States state){
        jptr = obj.getInstance(JobInstanceHandler::jobType::ACTIVE);
        status = true;
        jptr->PutInstance( std::move(jobInstance) );
+       //status1 = true;
+       
    }
    else{
        jptr = obj.getInstance(JobInstanceHandler::jobType::ACTIVE);
        jptr->ClearContainer();
        status = false;
-       std::cout<< "container cleared\n";
+       std::cout << "validity test failed\n";
        status1 = true;
+       
    }     
     return make_unique<ModeSelector>();
 }

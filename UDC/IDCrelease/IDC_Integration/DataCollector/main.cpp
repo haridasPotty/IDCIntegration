@@ -1,4 +1,4 @@
-#include "StateMachine.hpp"
+//#include "StateMachine.hpp"
 
 #include "statemachine.hpp"
 
@@ -10,13 +10,9 @@
     
 int main(){
   SM1driver obj;
-  SM1driver::registerHandler(&obj); 
-  
+  SM1driver::registerHandler(&obj);   
   Timer::TimerHandler objTimer; timer_t TimerID;
   //objTimer.makeTimer(&TimerID,1000, 1000, &Timer::TimerHandler::timerHandler1,SIGRTMAX);
-  
-
-  
   
   CommnMngr* commPtr = CommnMngr::GetInstance();
   if (commPtr != nullptr) { 
@@ -29,7 +25,7 @@ int main(){
     commPtr->SendUDCData((udcpayload) );
     commPtr->SendUDCData((udcpayload) );
     while(!commPtr->ignStatus){    
-    } 
+       } 
     obj.smStartThread();
     commPtr->SendUDCData((udcpayload) );    
     objTimer.makeTimer(&TimerID,1000, 1000, &Timer::TimerHandler::timerHandler1,SIGRTMAX);     

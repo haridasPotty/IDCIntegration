@@ -1,0 +1,802 @@
+// ###########################################
+// Unified Data Collector Request Format
+// Version 1.0
+// ###########################################
+
+// Google Protocol Buffers Version 3.
+syntax = "proto3";
+
+import "signal_source_definition.proto";
+import "logical_expression.proto";
+//import "google/protobuf/timestamp.proto";
+import "data_types.proto";
+
+// Package name.
+package data_collection_configuration_request;
+
+	
+// Version.
+message Version {
+  // Major version.
+  //
+  // @unit 1
+  // @resolution 1
+  // @range [0, )
+  uint32 major = 1;
+
+  // Minor version.
+  //
+  // @unit 1
+  // @resolution 1
+  // @range [0, )
+  uint32 minor = 2;
+
+  // Patch version.
+  //
+  // @unit 1
+  // @resolution 1
+  // @range [0, )
+  uint32 patch = 3;
+
+  // Name.
+  string name = 4;
+}
+
+// Logical boolean operator.
+enum LogicalOperatorEnum {	
+	// Conjunction operator logical OR.
+	OR = 0;
+	// Conjunction operator logical AND.
+	AND = 1;
+	// Not Applicable
+	NA = 2;
+}
+  
+message CollectionExtents
+{
+	uint64 count = 1;
+
+	//In bytes
+	uint64 size_byte = 2;
+	//In meters
+	uint64 path_length_m = 3;
+	//In seconds
+	uint64 path_duration_s = 4;
+	
+	repeated Trigger by_trigger = 5;
+}
+
+// Timestamp interval [start inclusive, end exclusive).
+message TimestampInterval {
+  // Start of interval inclusive. eg "2020-01-01T00:00:00Z"
+  /////////////////////google.protobuf.Timestamp start_inclusive = 1;
+
+  // End of interval exclusive.eg "2020-12-31T23:59:59Z"
+ ///////////////////////// google.protobuf.Timestamp end_exclusive = 2;
+}
+
+message Uint32Range {
+	uint32 min_value = 1;
+	uint32 max_value = 2;
+}
+
+message GeoLocation
+{
+	double latitude_deg = 1;
+	double longitude_deg = 2;
+}
+
+message GeoRectangle
+{
+	GeoLocation top_left = 1;
+	GeoLocation bottom_right = 2;
+}
+
+message GeoCircle
+{
+	GeoLocation center = 1;
+	double radius_m = 2;
+}
+
+message GeoPolygon
+{
+	repeated GeoLocation points = 1;
+}
+
+message GeoCorridor
+{
+	repeated GeoLocation center_line = 1;
+	double width_m = 2;
+}
+
+// The composite temporal restriction defines when data collection shall be possible.
+//
+// The repeated values of the same field are conjuncted by logical OR whereas all field values are conjuncted by logical AND.
+//
+// @example The composite temporal restriction with the date_range [[2019-01-01 to 2019-01-10], [2019-02-01 to 2019-02-10]], weekday [Monday, Wednesday], time_of_the_day_range [[8:00 to 9:00], [16:00 to 17:00]], is TRUE if the date restriction AND the weekday restriction AND the time of the day restriction are TRUE. The date restriction is TRUE if the date is within any of the specified ranges, e.g. 2019-01-01 or 2019-02-05. The weekday restriction is TRUE if the weekday is Monday OR Wednesday. The time of the day restriction is TRUE if the time is within any of the provided time ranges, e.g. 8:00, 16:30.
+message CompositeTimeRange 
+{
+	enum WeekdayEnum
+	{
+		UNDEFINED = 0;
+		MONDAY    = 1;
+		TUESDAY   = 2;
+		WEDNESDAY = 3;
+		THURSDAY  = 4;
+		FRIDAY    = 5;
+		SATURDAY  = 6;
+		SUNDAY    = 7;
+	}
+	  
+	// Range of dates defined by a (start timestamp inclusive, end timestamp exclusive) with possible coverage of multiple days.  
+	// The end timestamp is excluded to avoid the time overlap. For eg StarTime : "2020-01-01T00:00:00Z" and EndTime "2021-01-01T00:00:00Z" -> Here first day of 2021 is not considered.
+	//Only the date is considered as part this field. Time is considered from time_of_the_day_range	
+	repeated TimestampInterval date_range = 1;
+
+	// Weekday.
+	repeated WeekdayEnum weekday = 2;
+
+	// Time of the day range defined by a (start time inclusive, end time inclusive) in vehicle local timezone.
+	//
+	// @unit Seconds since midnight
+	// @resolution 1
+	// @range [0, 86400)
+	//
+	// @example [2:00:00 - 4:59:59] refers to data collection between 2 am and 5 am. [0:00:00 - 23:59:59] refers all day to data collection.
+	repeated Uint32Range time_of_the_day_range = 3;
+}
+
+// The composite spatial restrictions defines where data collection shall be possible.
+//
+// The repeated values of all fields are conjuncted by logical OR, i.e. if any of the spatial restrictions is TRUE, 
+//then the composite spatial restriction is TRUE. If all repeated values of all fields are FALSE, then the composite spatial restrictions is also FALSE.    
+message CompositeLocation
+{
+	repeated GeoCircle geo_circles = 1;
+	repeated GeoRectangle geo_rectangles = 2;
+	repeated GeoPolygon geo_polygons = 3;
+	repeated GeoCorridor geo_corridors = 4;
+}
+
+// The map restriction defines if data collection shall be possible based on map attribute values.
+//
+// The restriction is defined as follows:
+// - The map restriction is TRUE if the map attribute and value restriction is met and therefore TRUE OR the ignore_if_not_supported flag is TRUE.
+// - The map restriction is FALSE if the map attribute and value restriction is not met and therefore FALSE AND the ignore_if_not_supported is FALSE.
+message MapRestriction {
+	
+	enum RoadAttributeEnum 
+	{
+		NONE = 0;
+		MOTORWAY = 2;
+		COUNTRY_ROAD = 3;
+		CITY_ROAD = 4;
+		HOV = 5;
+		TUNNEL = 6;
+		BRIDGE = 7;
+		WATER_AREA = 8;
+		OTHER_AREA = 9;
+		/**
+		 * Inner state (or prefecture) road.
+		 */
+		STATE_ROAD = 10;
+		TOLL = 11;
+		PRIVATE = 12;
+		DOUBLE_CARRIAGE = 13;
+		OFF_MAP = 14;
+		/**
+		 * For JPN rural areas
+		 */
+		RURAL_AREA = 15;
+		/**
+		 * For JPN, when POI is a building.
+		 */
+		BUILDING = 16;
+	};
+	
+	message RoadAttribute {
+		
+		//Optional : This defines the type of road for which data has to be collected.	
+		repeated RoadAttributeEnum road_type = 1;
+		
+		//To combine multiple road_types by OR/AND . Default value is OR
+		//E.g. MOTORWAY OR STATE_ROAD if data has to be collected on faster roads, or e.g. TOLL AND TUNNEL if data has to be collected on toll tunnels
+		LogicalOperatorEnum road_type_operator = 2;
+		
+	}
+	
+	message FunctionalRoadClassRange {
+		//Data collection will be done when the vehicle enters into road with RANGE i,e min_value<= RANGE <= max_value
+		uint32 min_value = 1;
+		uint32 max_value = 2;
+	}
+	
+	//Optional 
+	RoadAttribute road_attribute = 1;
+	
+	//Optional : This defines the range of road class values for which data has to be collected.	
+	repeated FunctionalRoadClassRange functional_road_class_range = 2;
+	
+	//Optional : the fields will be populated using  ISO 3166-1 alpha-3 country code.
+	//if Whitelist contains valid value, UDC shall only  collect data for this specific job if the current country is part of this list.
+	//value can be eg : IND 
+	//                : BEL
+	repeated string whitelist_country_codes = 3;
+	
+	//if Blacklist contains valid value, UDC shall not collect data for this specific job if the current country is part of this list.
+	repeated string blacklist_country_codes = 4;
+	
+	// Flag that indicates what to do if the map_attribute_and_value is not supported by the vehicle.
+	bool ignore_if_not_supported = 5;
+	
+}
+
+/**added*/
+
+enum System_States
+{
+	IGN_LOCK = 0; 
+	IGN_OFF = 1;
+	IGN_ACC = 2;
+	IGN_ON = 3;
+	IGN_START = 4;
+	IGNITION_OFF = 5;	
+}
+message SystemStates
+{
+	System_States state = 1;
+}
+
+
+
+	
+// JobValidityRestrictions define conditions under which a job request message is valid and data collection shall be possible. 
+//If job validity restrictions are not met, data collection shall not happen.
+
+message JobValidityRestrictions 
+{
+	/*enum System_States
+    {
+		IGN_LOCK = 0; 
+		IGN_OFF = 1;
+		IGN_ACC = 2;
+		IGN_ON = 3;
+		IGN_START = 4;
+		IGNITION_OFF = 5;
+	
+    }*/
+	
+	// The composite temporal restriction defines when data collection shall be possible.
+    repeated CompositeTimeRange time_restrictions = 1;
+	
+	 // The composite spatial restriction defines where data collection shall be possible.
+    CompositeLocation spatial_restrictions = 2;
+
+    // The map restriction defines if data collection shall be possible based on map attribute values.
+    repeated MapRestriction map_restrictions = 3;
+	
+	// Invalid system states for data collection
+	// Activate data collection for job when the system state is not equal to any of the states specified in the field invalid_collection_states.
+	// If true, the job is required to run also during accessory off (e.g. while parking). If vehicle does not support job collection during accessory off mode, the job request may be terminated by the vehicle.
+
+	///[repeated System_States invalid_collection_states = 4;]
+
+	repeated SystemStates invalid_collection_states = 4;
+	
+}
+
+//JobTerminationConditions define the conditions under which a job has to be terminated from data being collected.
+// these conditions are to be monitored during Active and Paused state of the Job
+
+message JobTerminationConditions
+{
+	
+	// The composite time range enables the termination by time
+    repeated CompositeTimeRange time_conditions = 1;
+	
+	 // The composite spatial location enables the termination by locations
+    CompositeLocation spatial_conditions = 2;
+	
+	 // The logical expression enables the termination by signal value comparisons and transitions.
+	repeated logical_expression.LogicalExpression signal_value_condition = 3;
+	
+	// termination condition per application cycle 
+	CollectionExtents extents = 4;
+}
+
+
+
+// Fires every x milliseconds.
+message TimeDeltaTriggerEvent {
+	
+	enum TimeTriggerType
+	{
+		ACTIVE = 0;
+		PASSIVE = 1;
+	}
+	
+	TimeTriggerType type = 1;
+	
+	uint32 time_delta_milliseconds = 2;
+}
+
+// Fires every x meters.
+message DistanceDeltaTriggerEvent {
+  uint32 distance_delta_meters = 1;
+}
+
+// Fires whenever a signal value changes
+message SignalChangeTriggerEvent {
+	
+   bool on_signal_change = 1;	
+   // Signal and Source Definition
+   // Required
+    oneof signal_definition {
+        signal_source_definition.DefaultSource default_signal = 2;
+        signal_source_definition.CanSource can_signal = 3;
+        signal_source_definition.LinSource lin_signal = 4;
+        signal_source_definition.EthernetSource ethernet_signal = 5;
+        signal_source_definition.NetworkSource network_signal = 6;
+        signal_source_definition.InternalSource internal_signal = 7;
+        signal_source_definition.ProcessingToolboxSource processing_toolbox_signal = 8;
+        signal_source_definition.ThriftmeSource thriftme_signal = 9;
+        
+    }
+}
+
+message SignalTransitionTriggerEvent
+{
+	repeated logical_expression.LogicalExpression logical_expression  = 1;
+}
+
+// This field enables the option to mention the number of times a datapoint has to be collected
+message SignalCollectionCount {
+  uint32 count = 1;
+}
+
+message GeoRegionTriggerEvent
+{
+
+	CompositeLocation geo_area = 1;
+	
+	GeoAction geo_action = 2;
+}
+
+message CollectAfterTriggerEvent
+{
+	double collect_after_distance_meter_min = 1;
+	double collect_after_distance_meter_max = 2;
+	double collect_after_time_seconds_min = 3;
+	double collect_after_time_seconds_max = 4;
+}
+
+message GeoAction
+{
+	bool on_entry = 1;
+	bool on_exit = 2;
+	bool collect_while_inside = 3;
+	bool collect_while_outside = 4;
+}
+
+message KeyValuePair {
+    // Key
+    // Required
+    string key = 1;
+
+    // Value
+    // Required
+    string value = 2;
+}
+
+message TriggerAnnotationID
+{
+	uint32 id =1;
+}
+
+
+message Trigger 
+{
+	// The trigger annotation id is referencing the data request, which caused this data point to be collected
+	// A trigger annotation id is unique for the given job id
+   ////	repeated uint32 trigger_annotation_ids = 1;
+
+   repeated TriggerAnnotationID trigger_annotation_ids = 1;
+		
+	oneof CollectionConfiguration
+	{
+		// Time in unit MilliSecond and resolution 1 is used as reference. This is different than the usual SI-unit of time.
+		// All available sensor data values shall be collected in time intervals of the defined value.
+		TimeDeltaTriggerEvent time_delta_trigger_event = 2; 
+		
+		//All available sensor data values shall be collected in distance intervals of the defined value.
+		DistanceDeltaTriggerEvent distance_delta_trigger_event = 3; 
+		
+		// Collection is done when sensor data value has changed. If the data collection is started the first available value is also stored.
+		SignalChangeTriggerEvent signal_change_trigger_event = 4; 
+		
+		//This field enables to check if a signal is changing from one value to another and to handle multiple logical expressions
+		SignalTransitionTriggerEvent signal_transition_trigger_event = 5; 
+		
+		//Trigger based on Geo Restriction	
+		GeoRegionTriggerEvent geo_region_trigger_event = 6; 
+		
+		// This field enables the option to mention the number of times a datapoint has to be collected
+		SignalCollectionCount count = 7;
+		
+		// Native frequency of the sensor.
+		// All available sensor data values shall be collected as they are being produced by the sensors.
+		bool signal_collection_native_frequency = 8;
+		
+		/*
+		This trigger event is valid only once per HU session after the job becomes active for datacollection for the first time.
+		The datapoints mentioned as part of this trigger will not be collected until the specified distance and time is reached.
+		After the distance and time is acheived , the data is collected by native frequency by DEFAULT if anything else is not specified.
+		*/
+		CollectAfterTriggerEvent collect_after_trigger_event = 9;
+	}
+}
+
+// The collection action defines what to do during a data collection.
+// It consists of tasks to be performed by the collector and in general defines what sensor data shall be collected.
+// When actual collection happens depends on triggers. Triggers are triggering the real collection.
+message CollectionAction
+{	
+
+	repeated CollectionTask collection_tasks = 1;
+
+	// Defines the minimum expected extents of "message::UploadData" during data collection.
+	// If the"message::UploadData" extent value is lower or equal to the requested extent value, the "message::UploadData" shall not be transmitted to backend
+	// @example The extent contains a minimum of 20 seconds duration. A message containing 15 seconds of data collection will not be transmitted. The specified minimum extent is overriding any lifetime values. If the minimum extent is not met and 
+	//e.g. the time to submit or the discard after time is reached, then the message is discarded as it poses no value to the submitter.
+	CollectionExtents min_split_frequency = 2;
+
+	// Defines the maximum allowed requested extent of a "message::UploadData" during data collection.
+	// If the "message::UploadData" extent value is greater or equal to the requested extent value, the already collected data shall be put into a 
+	//"message::UploadData" that could be transmitted to the submitter of the job request, and continue the data collection for the next "message::UploadData".
+
+	CollectionExtents data_packetization_trigger = 3;
+
+}
+
+message StartUpDelay
+{
+	double no_collection_startup_distance_meter_min = 1;
+	double no_collection_startup_distance_meter_max = 2;
+	double no_collection_startup_time_seconds_min = 3;
+	double no_collection_startup_time_seconds_max = 4;
+}
+
+message EndPointUncertainty
+{
+	double no_collection_end_distance_meter_min = 1;
+	double no_collection_end_distance_meter_max = 2;
+	double no_collection_end_time_seconds_min = 3;
+	double no_collection_end_time_seconds_max = 4;
+	
+}
+
+message DataRecordingGap
+{
+	double data_recording_gap_distance_minimum_meter = 1;
+	double data_recording_gap_distance_maximum_meter = 2;
+	double data_recording_gap_time_minimum_seconds = 3;
+	double data_recording_gap_time_maximum_seconds = 4;
+
+}
+
+message AbsoluteTimeOffset
+{
+	int64 absolute_time_offset_minimum_milliseconds = 1;
+	int64 absolute_time_offset_maximum_milliseconds = 2;
+}
+
+
+message CollectionTask
+{		
+
+	uint32 task_id = 1;
+	
+	repeated Datapoint data_points = 2;
+		
+	DatapointsConfiguration data_points_configuration = 3;
+}
+
+
+// Defines the List of SNA  Applicable for a data Point
+// The values can be specified as a range under value_range field as any one of the following range : Less_than_equal_to,greater_than_equal_to, or value_interval
+// The values can also be isolated values
+message ListOfSNA
+{
+	repeated ValueRange value_range = 1;
+	repeated double value_list_SNA = 2;
+}
+	
+
+message RawValueFilter
+{
+	repeated ValueRange value_range_custom = 1;
+	repeated double value_list_custom = 2;
+}
+
+message ValueRange
+{
+	oneof range
+	{
+		double less_than_equal_to = 1;
+		double greater_than_equal_to = 2;
+		ValueInterval value_interval =3;
+		
+	}
+		
+}
+
+message ValueInterval
+{ 
+	double value_lower_included = 1;
+	double value_upper_included = 2;
+	
+}
+	
+	
+
+message Datapoint
+    {
+	
+		oneof signal_definition 
+		{
+				signal_source_definition.DefaultSource default_signal = 1;
+				signal_source_definition.CanSource can_signal = 2;
+				signal_source_definition.LinSource lin_signal = 3;
+				signal_source_definition.EthernetSource ethernet_signal = 4;
+				signal_source_definition.NetworkSource network_signal = 5;
+				signal_source_definition.InternalSource internal_signal = 6;
+				//signal_source_definition.ProcessingToolboxSource processing_toolbox_signal = 7;
+				
+				Processing_Toolbox_Definition processing_toolbox_signal = 7;
+				signal_source_definition.ThriftmeSource thriftme_signal = 8;
+				signal_source_definition.CollectdSource collectd = 10;
+				signal_source_definition.EELSource eelsource = 19;
+				signal_source_definition.ThriftmeSourceActive thriftme_active = 23;
+		}
+			
+		//The collected values for a data point are a combination of Selection in " filter_sna " and "filter_raw_value_custom"
+        //filter_sna = true , discards all SNA values for the data point in focus
+	    //filter_sna = false , collects all possible values avaialble for the data point in focus
+		//Default behavior, fasle ; collect all values
+		
+		bool filter_sna = 13 ;	
+		
+		//Contains The SNA values defined in the Source Extract . 
+		//Required or  optional ??
+		ListOfSNA list_of_SNA = 20;
+		
+		//The collected values for a data point are a combination of Selection in " filter_sna " and "filter_raw_value_custom"
+		//filter_raw_value_custom = true , discards a set of custom values defined under "RawValueFilter"  for the data point in focus
+		//filter_raw_value_custom = false , collects all possible values avaialble for the data point in focus
+		//Default behavior, fasle ; collect all values
+			
+		bool filter_raw_value_custom = 21 ;
+		
+		// Conatins Value filter defined by the consumer . The filter is executed on the raw captured values
+		
+		RawValueFilter raw_value_filter = 22 ;
+			
+		enum DataPointValueTypeEnum {
+			DOUBLE = 0;
+			FLOAT =1;
+			INT32 = 2;
+			INT64 = 3;
+			UINT32 = 4;
+			UINT64 = 5;
+			SINT32 = 6;
+			SINT64 = 7;
+			FIXED32 = 8;
+			FIXED64 = 9;
+			SFIXED32 = 10;
+			SFIXED64 = 11;
+			BOOL = 12;
+			STRING = 13;
+			BYTES = 14;				
+			}		
+		//Optional
+		//The option to mention which datatype of UploadData::DataPoint::data_field_value has to be selected by the UDC,
+		//add the value of this particular datapoint from any data source[ like someip,if1 etc,.]
+		//By default it will be double
+		DataPointValueTypeEnum data_point_field_type =14;
+			
+		//optional : if zero and required : if non-zero
+		//Defines the number of occurrences of this data point in uplink file. If the uplink file doesn't contain required occurrences by the time of split,uplink file will be discarded.
+		uint32 min_number_of_instances = 16;
+		
+		//To determine if the Absolute value should be captured for this data point or relative.
+		//This field defines as to how the relativity has to be captured ie wrt to start value of file / rvid / session id.
+		//By default it will be absolute value
+		//Optional
+		enum RelativeDataValueCaptureEnum {
+			NOT_RELATIVE = 0;
+			RELATIVE_WRT_FILE = 1;
+			RELATIVE_WRT_RVID = 2;
+			RELATIVE_WRT_SESSIONID = 3;
+		}
+		RelativeDataValueCaptureEnum relative_data_value_capture = 17;
+		
+		// data Point identifier created in the data registry 
+		//Required
+		//Note:In case of Active thrift data Point slug information is populated in the signal source definition
+		string slug = 18;
+
+	}	
+
+message Processing_Toolbox_Definition
+{
+	signal_source_definition.ProcessingToolboxSource processing_toolbox_signal_def = 1;
+	
+		// Toolbox input parameters
+	repeated ToolInputParameter tool_input_parameter = 2;
+
+}
+
+message ToolInputParameter
+{
+
+	Datapoint input = 1;	
+					
+	int32 dpi_type = 2;
+	
+	string dpr = 3; 				
+		// borrow fields from data Points those are needed
+	DatapointsConfiguration data_points_configuration = 4;
+		
+		
+}
+	
+		
+message DatapointsConfiguration
+	{
+		repeated Trigger event_trigger = 1;	
+			
+		//To combine all the triggers with AND/OR
+		//E.g : TimeDeltaTriggerEvent by 50ms AND SignalCollectionCount with count 200
+		LogicalOperatorEnum collection_trigger_operator = 2;
+}
+
+
+	
+enum RelativeTimeStampCaptureEnum 
+	{
+		NO_TIMESTAMP = 0;
+		NOT_RELATIVE = 1;
+		RELATIVE_WRT_FILE = 2;
+		RELATIVE_WRT_RVID = 3;
+		RELATIVE_WRT_SESSIONID = 4;
+	}
+	
+message RvidEffectivePeriod
+{
+	uint32 rvid_effective_period_range_min_seconds = 1;
+	uint32 rvid_effective_period_range_max_seconds = 2;
+	
+}
+	
+message DataPackageTimeToLive
+{
+	uint32 data_package_time_to_live_min_s = 1;
+	uint32 data_package_time_to_live_max_s = 2;
+}
+
+enum UploadChannel 
+{
+	PERSONAL_DATA = 0;
+	CROWD_DATA = 1;
+}
+	
+
+
+message DataCollectionJob
+{
+	message JobConfig
+	{
+		//Unique identifier of the job
+		string job_uuid = 1;
+		
+		//RVID = Random vehicle identifier. The effective period range defines the duration for one RVID. After the effective period has expired a new RVID is generated . The exact period is random selection from the range 
+		RvidEffectivePeriod rvid_effective_period_range = 2;
+		
+		//NOSSG = number of sessions since generated, defines of often a log file is allowed to be carried over to the next session (power cycle), 
+		//in case the log file cannot be uploaded due to missing connectivity
+		uint32 nossg_allowed = 3;
+		
+		//Parameters for the Active Thrift Telelog feature.
+		//There is a list of "hardcoded" IF1 functions to be called and logged by Telelog on system start up.
+		bool enable_active_thrift = 4;
+
+		uint32 active_thrift_interval_ms = 5;
+
+		uint32 active_thrift_retry_ms = 6;
+
+		uint32 active_thrift_connect_timeout_ms = 7;
+
+		uint32 active_thrift_response_timeout_ms = 8;
+		
+		//Defined the upload interval for log files
+		uint32 upload_interval = 9;
+		
+		//Defines buffers size for Thrift brokers to store IF1 messages in case connection to server hasn't been established
+		uint32 stf_buffer_size = 10;
+
+		//Flag to log full VIN 
+		bool record_vin = 11;
+		
+		//Flag to decide whether the job has to be persisted 
+		bool persist_request = 12;
+		
+		//Define the startup delay for period, after vehicle starts for not collecting data
+		StartUpDelay startup_delay = 13;
+		
+		//Define the end point for period, before vehicle stops for not collecting data
+		EndPointUncertainty end_point_uncertainity = 14;
+		
+		DataRecordingGap data_recording_gap = 15;
+		
+		AbsoluteTimeOffset absolute_time_offset = 16;
+		
+		// format version of the current Job request
+		Version job_format_version = 17;
+		
+		
+		//Defines the timestamp relativity and availability 
+		//NO_TIMESTAM = 0; 
+		//NOT_RELATIVE = 1;
+		//RELATIVE_WRT_FILE = 1;
+		//RELATIVE_WRT_RVID = 2;
+		//RELATIVE_WRT_SESSIONID = 3;
+		
+		RelativeTimeStampCaptureEnum relative_time_stamp_capture = 18;
+		
+		//enable local time offset capture		
+		bool record_tzoffset = 19;
+		// enable file counter capture
+		bool record_file_counter = 20;
+		//enable session id capture
+		bool record_session_id = 21;
+		//enable rvid capture
+		bool record_rvid = 22;
+		// enable ecu information capture
+		bool record_ecu_info = 23;
+		// enable market information capture
+		bool record_market_info = 24;
+		
+		
+		// job Priority 
+		uint32 job_priority = 25;
+		
+		// Device properties
+		// Optional
+		repeated request_format.data_types.KeyValuePair device_properties = 26;
+
+		// Debug information
+		// Optional
+		repeated request_format.data_types.KeyValuePair debug_information = 27;
+		
+		// Defines the random time period within a defined range,  in seconds post which the data package upload is not advised. The period is effective from the point of package creation
+				
+		DataPackageTimeToLive data_package_time_to_live_s = 28;
+		
+		// Identifies the Data upload channel
+		UploadChannel upload_channel = 29;
+			
+		
+	}
+
+	JobConfig job_config = 1;
+	
+	JobValidityRestrictions validity_restrictions = 2;
+	
+	CollectionAction action = 3;
+	
+	JobTerminationConditions termination_conditions = 4;	
+}
+
+
+		
+

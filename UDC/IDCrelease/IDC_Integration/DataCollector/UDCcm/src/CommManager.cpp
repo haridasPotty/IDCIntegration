@@ -17,7 +17,7 @@ CommnMngr *CommnMngr::GetInstance()
 void CommnMngr::queueMonitoring(){
    while(!ignStatus){
         if (vCommand.empty()){
-       // std::cout << "empty\n";
+       
         }
     else{
         std::string cmd = vCommand.back();
@@ -40,7 +40,7 @@ void CommnMngr::queueMonitoring(){
 }
 void CommnMngr::receivecb(Payload& msg)
 {
-   //std::cout << "UDC core:Commn Manager\n";
+   
    Payload data;
    memcpy(&data,&msg,sizeof(msg));
    
