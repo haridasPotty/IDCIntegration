@@ -119,7 +119,7 @@ unique_ptr<StateMachine2>PollingState ::onEvent(States state){
        jptr = obj.getInstance(JobInstanceHandler::jobType::ACTIVE);
        status = true;
        jptr->PutInstance( std::move(jobInstance) );
-       //status1 = true;
+       
        
    }
    else{

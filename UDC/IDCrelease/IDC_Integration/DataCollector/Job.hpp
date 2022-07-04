@@ -119,8 +119,7 @@ namespace ValidityRestriction
 
 /***************************end of validity restrictions section*******************************************/
 
-typedef struct  
-{
+typedef struct  {
 	uint64_t count ;
 
 	//In bytes
