@@ -12,7 +12,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_binary(
     name = "udcbinary",
-    srcs = ["main.cpp"   
+    srcs = ["main.cpp" ,"Parser.cpp"  
     ],
         
     linkopts = [
@@ -31,6 +31,17 @@ cc_library(
     hdrs = [ "Job.hpp" ,"Parser.hpp"],
     visibility = ["//visibility:public"],
 )
+
+cc_binary(
+    name = "parserbinary",
+    srcs = ["reqgen.cpp","Parser.cpp",
+    ],
+     copts = [ "-std=c++14"],
+    deps = ["@my_protos//:point_cc_proto",
+            "jobx",
+    ],    
+    
+    )
 
 
 

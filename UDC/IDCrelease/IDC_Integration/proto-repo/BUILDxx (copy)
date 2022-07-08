@@ -15,7 +15,6 @@ cc_proto_library(
 proto_library(
     name = "my-proto",
     srcs = [
-        "request.proto",
         "data_types.proto",
         "logical_expression.proto",
         "signal_source_definition.proto",

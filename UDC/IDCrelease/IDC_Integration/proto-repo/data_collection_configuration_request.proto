@@ -778,7 +778,7 @@ message DataCollectionJob
 		// Optional
 		repeated request_format.data_types.KeyValuePair debug_information = 27;
 		
-		// Defines the random time period within a defined range,  in seconds post which the data package upload is not advised. The period is effective from the point of package creation
+		// Defines the random time period within a defined range,  in seconds post which the data package upload is not advised. 				The period is effective from the point of package creation
 				
 		DataPackageTimeToLive data_package_time_to_live_s = 28;
 		

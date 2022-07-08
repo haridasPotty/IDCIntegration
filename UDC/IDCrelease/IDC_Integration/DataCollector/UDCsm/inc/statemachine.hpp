@@ -28,9 +28,7 @@ namespace StateControlVariable{
 
 class StateMachine2{
     public:
-    virtual unique_ptr<StateMachine2> onEvent(States state) = 0;
-    JobUpdate::JobUpdateHandler obj1; 
-    JobUpdate::JobUpdateInterface* ptr = nullptr;
+    virtual unique_ptr<StateMachine2> onEvent(States state) = 0; 
     
 };
 

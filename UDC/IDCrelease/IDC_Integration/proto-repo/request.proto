@@ -1,0 +1,42 @@
+syntax = "proto3";
+package Request;
+
+
+
+message NetworkSignal
+{
+	int32 serviceid = 1;
+	int32 eventid =2;
+	string signalname = 3;
+}
+
+message Collectd
+{
+	int32 serviceid = 1;
+	int32 eventid =2;
+	string signalname = 3;
+}
+
+message TaskInfo
+{
+	int32 taskid =1;
+	repeated NetworkSignal network = 2;	
+}
+
+message JobConfig
+{
+	string job_uuid  = 1;
+	int32 priority 	 = 2;	
+	TaskInfo tasks   = 3;	
+}
+
+message DataCollectionJob
+{
+ repeated JobConfig jobconfig = 1;
+}
+
+
+
+
+
+

@@ -16,13 +16,15 @@
 
 #include "static_config_udc_civic.pb.h"
 
+#include "request.pb.h"
+
 #include "Job.hpp"
 
 using namespace std;
 class ReqParser{
 public:
+#if 0
 DataCollectionJobsListMessage jobHandler;
-
 data_collection_configuration_request::DataCollectionJob::JobConfig jobconfig;
 data_collection_configuration_request::DataCollectionJob job;
 signal_source_definition::CollectdSource collectd;
@@ -37,6 +39,9 @@ data_collection_configuration_request::JobTerminationConditions termCond;
 data_collection_configuration_request::CollectionExtents collectionextend;
 data_collection_configuration_request::SystemStates state;
 
+#endif
+
+Request::DataCollectionJob jobHandler;
 const google::protobuf::Reflection* reflection = jobHandler.GetReflection();
 const google::protobuf::Descriptor* descriptor = jobHandler.GetDescriptor();
 const google::protobuf::FieldDescriptor* field = nullptr;
@@ -46,83 +51,12 @@ const char *path="Proto/IDC_Config.data";
 
 public:
 void set(){ 
-  jobconfig.set_job_priority(1);
-  jobconfig.set_job_uuid("collectd");
-  ///collectd.set_commandtype(signal_source_definition::CollectdSource::CommandTypeEnum::CollectdSource_CommandTypeEnum_Listval);
-  ///collectd.set_identifier("cpuinfo");
-  
-  
-  datapointCollectd.mutable_collectd()->set_identifier("cpuinfo");
-  datapointCollectd.mutable_collectd()-> \
-     set_commandtype(signal_source_definition::CollectdSource::CommandTypeEnum::\
-                                          CollectdSource_CommandTypeEnum_Listval);
-  
-  /*end of data point*/
-  collectiontask.set_task_id(12);
-  collectiontask.add_data_points()->CopyFrom(datapointCollectd);
-  
-
-  /*Trigger*/  
-  id1.set_id(12);//id2.set_id(24);
-  trigger.add_trigger_annotation_ids()->CopyFrom(id1);
-  //trigger.add_trigger_annotation_ids()->CopyFrom(id2);
-  
-
-  for (int i=0;i<trigger.trigger_annotation_ids_size();++i){
-    //std::cout << trigger.mutable_trigger_annotation_ids(i)->DebugString();
-  }
-
-  trigger.mutable_time_delta_trigger_event()->set_time_delta_milliseconds(2000);    
-  collectiontask.mutable_data_points_configuration()->add_event_trigger()->
-                                                              CopyFrom(trigger);
-  collectionaction.add_collection_tasks()->CopyFrom(collectiontask);  
-   /*end of collection task*/
-   /*validity restriction */
-  state.set_state(data_collection_configuration_request::System_States::IGN_ACC);
-
-  /*collection extend for temination condition*/
-  //collectionextend.set_count(12);//need to collect 12 samples from the source
-  //termCond.mutable_extents()->set_count(12);
-
-  
-#if 0
-  job.mutable_job_config()->set_job_uuid("collectdJob");
-  job.mutable_job_config()->set_job_priority(12);
-
-  state.set_state(data_collection_configuration_request::System_States::IGN_ACC);
-  validityRestr.add_invalid_collection_states()->CopyFrom(state);
-
-  job.mutable_validity_restrictions()->add_invalid_collection_states()->CopyFrom(state);
-
-  job.mutable_action()->add_collection_tasks()->set_task_id(121);
-  job.mutable_action()->add_collection_tasks()->add_data_points()->CopyFrom(datapointCollectd);
-  #endif
-  job.mutable_job_config()->set_job_priority(12);
-  job.mutable_job_config()->set_job_uuid("collectd");
-
-  /*action*/
-  job.mutable_action()->add_collection_tasks()->CopyFrom(collectiontask);
-
-  /*validity restriction*/
-  job.mutable_validity_restrictions()->add_invalid_collection_states()->CopyFrom(state);
-
-  /*termination condition*/
-  job.mutable_termination_conditions()->mutable_extents()->set_count(12);
-  job.mutable_termination_conditions()->mutable_extents()->set_path_duration_s(1);
-
-/*******************end of data_collection_config_req***************************************/
-
-jobHandler.add_new_jobs()->CopyFrom(job);
-
-
-/*jobHandler.add_job_ids_to_terminate()->append("sss");
-jobHandler.add_job_ids_to_terminate()->append("collectd");*/ 
+ 
   
 
   
   ////////std::cout << jobHandler.DebugString();
-
-  std::ofstream ofs(path/*"./Proto/IDC_Config.data"*/, std::ios_base::out | std::ios_base::binary);
+  std::ofstream ofs(path, std::ios_base::out | std::ios_base::binary);
   jobHandler.SerializeToOstream(&ofs);     
 
 }

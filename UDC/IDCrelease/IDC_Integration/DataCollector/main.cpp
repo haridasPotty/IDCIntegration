@@ -12,9 +12,11 @@ int main(){
   SM1driver obj;
   SM1driver::registerHandler(&obj);   
   Timer::TimerHandler objTimer; timer_t TimerID;
+   obj.smStartThread();
   //objTimer.makeTimer(&TimerID,1000, 1000, &Timer::TimerHandler::timerHandler1,SIGRTMAX);
   
-  CommnMngr* commPtr = CommnMngr::GetInstance();
+  
+  /* CommnMngr* commPtr = CommnMngr::GetInstance();
   if (commPtr != nullptr) { 
     commPtr->ConnectServer();
     commPtr->startThread();       
@@ -32,7 +34,7 @@ int main(){
   }
   else{
     std::cout << "handler is null\n";
-  }
+  } */
   std::cout  << "[Good Bye]" <<"\n";
     return 0;
 }

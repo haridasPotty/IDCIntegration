@@ -12,7 +12,7 @@ cc_library(
     copts = [ "-std=c++14"],    
     deps = [               
         "//Container/JobContainner:jobContainer", 
-        "//Container/TaskContainer:taskContainer",        
+        #"//Container/TaskContainer:taskContainer",        
         "//UDCdcm:udc-dcm", 
         "//UDCcm:commMngr" , 
         "@my_protos//:point_cc_proto",                   

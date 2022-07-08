@@ -6,6 +6,8 @@
 #include <time.h>
 #include <memory>
 #include <unistd.h>
+#include <tuple>
+#include <iterator>
 #include "Job.hpp"
 using namespace std;
 
@@ -13,75 +15,60 @@ namespace JobInstanceHandler
 {
     enum jobType {ACTIVE,INVALID,PAUSED};
     class JInterface{
-        public:
-        std::vector< unique_ptr<DataCollectionJob> > jobInstanceVector;
-        virtual void PutInstance( unique_ptr<DataCollectionJob> obj) = 0;
-        virtual bool GetInstance(unique_ptr<DataCollectionJob>& ptr) = 0;
-        virtual bool IsEmpty() = 0;
-        virtual uint8_t GetSize() = 0;
-        virtual void ClearContainer() = 0;
+        public:       
+        typedef tuple <std::string, int32_t, unique_ptr<DataCollectionJobsList> >  my_tuple;
+        my_tuple jobContainertple;
+        std::vector< my_tuple > jobInstanceVector;
+        std::vector< my_tuple > ::iterator vitr, i;
+        virtual void AddJob(std::string, int32_t, unique_ptr<DataCollectionJobsList>&) = 0;
+        virtual bool GetJob(std::string,unique_ptr<DataCollectionJobsList>&  ) = 0;       
     };
     class PausedJob:public JInterface{
         public:
-        void PutInstance( unique_ptr<DataCollectionJob> obj ){
-            jobInstanceVector.push_back(move (obj) );
+        void AddJob(std::string uid, int32_t priority ,\
+                         unique_ptr<DataCollectionJobsList>& jobInstance){                            
+            jobContainertple = make_tuple(uid,priority,move(jobInstance));
+            jobInstanceVector.push_back(move(jobContainertple));
         }
-        bool GetInstance(unique_ptr<DataCollectionJob>& ptr){
-            if (jobInstanceVector.empty() == false){
-                ptr = std::move( jobInstanceVector.back() );
+        bool GetJob(std::string uid,unique_ptr<DataCollectionJobsList>& jobInstance){   
+            if(jobInstanceVector.empty())  {
+                std::cout << "--vector is empty\n";
+            }
+            else{ 
+            int status = uid.compare(get<0>(jobInstanceVector.at(0)) );
+                if (!status){ 
+                jobInstance = ( move(get<2>(jobInstanceVector.at(0))) );
                 jobInstanceVector.pop_back();
+                if (jobInstance!=nullptr){
+                    cout << "+++"<<jobInstance->job.jobinfo.priority << "\n";
+                }
+                else{
+                 return false;//need to add log
+                }
                 return true;
-            }
-            return false;            
-        }
-        uint8_t GetSize() {
-             return (jobInstanceVector.size() );
-        }
-
-        bool IsEmpty(){
-            if (jobInstanceVector.empty() ){
-                return true;
-            }
+                }
+            }                
             return false;
-        }
-        void ClearContainer(){
-            jobInstanceVector.clear();
-        }
+        }       
     };
 
     class ActiveJob:public JInterface{
         public:
-        void PutInstance( unique_ptr<DataCollectionJob> obj ){
-            jobInstanceVector.push_back(move (obj) );
+         void AddJob(std::string uid, int32_t priority , \
+                          unique_ptr<DataCollectionJobsList>& jobInstance){
+            jobContainertple = make_tuple(uid,priority,move(jobInstance));
         }
-        bool GetInstance(unique_ptr<DataCollectionJob>& ptr){
-            if (jobInstanceVector.empty() == false){
-                ptr = std::move( jobInstanceVector.back() );
-                jobInstanceVector.pop_back();
+        bool GetJob(std::string uid,unique_ptr<DataCollectionJobsList>& jobInstance){
+                jobInstance = move(get<2>(jobContainertple) );
                 return true;
-            }
-            return false;            
-        }
-        bool IsEmpty(){
-            if (jobInstanceVector.empty() ){
-                return true;
-            }
-            return false;
-        }
-        uint8_t GetSize() {
-            return (jobInstanceVector.size() );
-        }
-         void ClearContainer(){
-            jobInstanceVector.clear();
-        }
+        }       
     };
 
-    /*************************************************************************/
+  
      class JobUpdateHandler{	
 	    static JInterface* ptr[3] ;
         static ActiveJob active;
-        static PausedJob paused;
-        //static InvalidJobHandler invalid;
+        static PausedJob paused;     
         
         public:
         JInterface* getInstance(jobType type){
@@ -89,8 +76,7 @@ namespace JobInstanceHandler
                    ptr[0] = &active;               
                 return ptr[0];
             }
-            else if (type == jobType::INVALID){
-                //ptr[1] = &invalid;
+            else if (type == jobType::INVALID){               
                 return ptr[1];  
             }
             else if (type == jobType::PAUSED){
@@ -102,12 +88,9 @@ namespace JobInstanceHandler
             else{
                 return &active;
             }
-        }        
-	
+        }  	
 		JobUpdateHandler(){}
-        ~JobUpdateHandler()		{
-		    ///std::cout<<"destructor invoked  \n";
-            		   
+        ~JobUpdateHandler(){  		   
 		}     
 	
     };
@@ -117,119 +100,16 @@ namespace JobInstanceHandler
 
 
 
-namespace JobUpdate
-{ 
-    enum jobType {ACTIVE,INVALID,PAUSED};
-    using jType = unique_ptr<DataCollectionJob>;
-    class JobUpdateInterface{
-        public:
-        std::vector<unique_ptr<DataCollectionJob>> JobVector = {};         
-        virtual bool IsEmpty()      = 0;
-        virtual bool PutJob( unique_ptr<DataCollectionJob>) = 0;
-        virtual bool GetJob( unique_ptr<DataCollectionJob>&) = 0;        
-    };
 
-    class AcitveJobHandler: public JobUpdateInterface{
-       
-        public:
-        bool IsEmpty() ;
-        bool PutJob(unique_ptr<DataCollectionJob> Job) ;
-        bool GetJob(unique_ptr<DataCollectionJob>& Job);
-    };
-    class PausedJobHandler: public JobUpdateInterface{
-       
-        public:
-        bool IsEmpty() ;
-        bool PutJob(unique_ptr<DataCollectionJob> Job) ;        
-        bool GetJob(unique_ptr<DataCollectionJob>& Job);
-    };
-    class InvalidJobHandler: public JobUpdateInterface{
-       
-        public:
-        bool IsEmpty()         ;
-        bool PutJob(unique_ptr<DataCollectionJob> Job) ;
-        bool GetJob(unique_ptr<DataCollectionJob>& Job);
-    };
-    
-    /***********************************************************/
-    class JobUpdateHandler{	
-	    static JobUpdateInterface* ptr[3] ;
-        static AcitveJobHandler active;
-        static PausedJobHandler paused;
-        static InvalidJobHandler invalid;
-        
-        public:
-        JobUpdateInterface* getInstance(jobType type){
-            if (type == jobType::ACTIVE){ 
-              //  if (ptr[0] == nullptr){
-                    ptr[0] = &active;
-               // }
-                return ptr[0];
-            }
-            else if (type == jobType::INVALID){
-               // if (ptr[1] == nullptr){
-                ptr[1] = &invalid;
-               // }
-                return ptr[1];  
-            }
-            else if (type == jobType::PAUSED){
-                if (ptr[2] == nullptr){
-                ptr[2] = &paused;
-                }
-                return ptr[2];  
-            }
-            else{
-                return &active;
-            }
-        }        
-	
-		JobUpdateHandler(){}
-        ~JobUpdateHandler()		{
-		   // std::cout<<"destructor invoked  \n";
-            		   
-		}     
-	
-    };
-};
-
-/*************************************************************************************/
-
-namespace Timer
-{
-    //   timer_t TimerID;
-    //timer_t secondTimerID;
-    //timer_t thirdTimerID;
-
-   /* static void timerHandler( int sig, siginfo_t *si, void *uc ){
-        printf("sighandler invoked\n");
-        static int refCount;
-        refCount++;
-        printf("%d\n",refCount);
-        
-    }*/
-   /* static void timerHandler1( int sig, siginfo_t *si, void *uc ){
-        printf("***************************************************************************sighandler1 invoked\n");
-        
-        static int refCount;
-        refCount++;
-        printf("%d\n",refCount);
-        
-    }*/
-    
-   
-
-
+namespace Timer{  
     typedef void (*t_somefunc)(int,siginfo_t*,void*);
-
     class TimerHandler{
             struct sigevent te;
             struct itimerspec its;
             struct sigaction sa;
         public:
             static int refCountvar;
-        static void timerHandler1( int sig, siginfo_t *si, void *uc ){
-        /* printf("************************************************ \
-                ***************************timerHandler invoked %d\n",refCountvar);   */        
+        static void timerHandler1( int sig, siginfo_t *si, void *uc ){               
             refCountvar++;
             printf("%d\n",refCountvar);
         }
@@ -238,10 +118,8 @@ namespace Timer
         }
         int makeTimer( timer_t *timerID, int expireMS, int intervalMS ,t_somefunc fnp,int number)
         {
-            /*struct sigevent te;
-            struct itimerspec its;
-            struct sigaction sa;*/
-            int sigNo = number;//SIGRTMIN;
+            
+            int sigNo = number;
 
             /* Set up signal handler. */
             sa.sa_flags = SA_SIGINFO;
@@ -266,10 +144,7 @@ namespace Timer
             return 1;
         }
     };
-    
-
-
-};
+ };
     
   
 

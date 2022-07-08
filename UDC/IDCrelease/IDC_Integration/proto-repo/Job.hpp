@@ -64,8 +64,17 @@ class JobConfig{
 //[542]
 class DataPoints{
     public:
-    CollectdSource::Collectd collectd;//[]need to check]
-};
+    std::vector<std::string> datasource;
+    void UpdateSource(std::string str){ datasource.push_back(str);}
+		bool GetSource(std::string& str ){
+			if (datasource.isempty() ) {
+				str = datasource.back();
+				datasource.pop_back();
+				return true;
+			}
+		return false;
+		}
+	};
 //[494]
 class CollectionTask{
     public:
