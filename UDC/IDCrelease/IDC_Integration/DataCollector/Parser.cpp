@@ -37,19 +37,31 @@ void ReqParser::set(){
     std::cout << network1.DebugString();     
 }
 
-void ReqParser::Read(DataCollectionJobsList* dcj){
+
+void ReqParser::Read(DataCollectionJobsList* dcj,int jobNumber){
   std::cout << "Readinvoked\n";
-int numJobs = 1;
-int numTask = 1;
+
 NetworkSignal sig;
 sig.eventid  =12;
 sig.serviceid =123;
 sig.signalname = "funID";
+   /* dcj->job.jobinfo.task.NWsgnalUpdate(sig);
+    dcj->job.jobinfo.job_uuid ="someip";
+    dcj->job.jobinfo.priority=12;*/
+    
+  if(jobNumber == 0){
+    dcj->job.jobinfo.task.NWsgnalUpdate(sig);
+    dcj->job.jobinfo.job_uuid ="someip";
+    dcj->job.jobinfo.priority=12;
+  }
+  else if(jobNumber==1){
+    dcj->job.jobinfo.task.NWsgnalUpdate(sig);
+    dcj->job.jobinfo.job_uuid ="nw";
+    dcj->job.jobinfo.priority=16;
+  }
+  else{
 
-
-dcj->job.jobinfo.task.NWsgnalUpdate(sig);
-dcj->job.jobinfo.job_uuid ="someip";
-dcj->job.jobinfo.priority=12;
+  }
 }
 
 bool ReqParser::CheckForNewRequest(){
@@ -59,7 +71,7 @@ bool ReqParser::CheckForNewRequest(){
 
   int ReqParser::GetNumberofJobs(){
     
-    return jobHandler.jobconfig_size();
+    return 2;//jobHandler.jobconfig_size();
   }
 
   bool ReqParser::GetJobUUID(std::vector<std::string>&& vectJobUUID){

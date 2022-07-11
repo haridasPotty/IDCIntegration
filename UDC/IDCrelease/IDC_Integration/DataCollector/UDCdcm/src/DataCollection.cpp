@@ -1,10 +1,17 @@
 #include "DataCollection.hpp"
 
   bool DataCollectionGateWay::DataSourceInit(std::string uid,\
-                 unique_ptr<DataCollectionJobsList>& jobInstance){                   
+                 shared_ptr<DataCollectionJobsList>& jobInstance){                   
     int compStatus = uid.compare("someip");
-    if (!compStatus){
-            //vdc interaction 
+      if (1){
+      //vdc interaction 
+      if(jobInstance!=nullptr){ 
+
+      std::cout << "[" << jobInstance->job.jobinfo.job_uuid<<"]\n";     
+      }
+      else{
+      std::cout << "jobInstance is null\n";
+      }  
             std::cout << "VDC interaction pending!!!\n";
     }
     else{

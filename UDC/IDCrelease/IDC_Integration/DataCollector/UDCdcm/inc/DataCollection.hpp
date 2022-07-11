@@ -7,7 +7,7 @@
 class DataCollectionGateWay{
     public:
 
-    bool DataSourceInit(std::string,unique_ptr<DataCollectionJobsList>& jobInstance);
+    bool DataSourceInit(std::string,shared_ptr<DataCollectionJobsList>& jobInstance);
 
 };
 

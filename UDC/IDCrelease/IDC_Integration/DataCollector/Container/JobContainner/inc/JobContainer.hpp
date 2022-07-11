@@ -16,51 +16,98 @@ namespace JobInstanceHandler
     enum jobType {ACTIVE,INVALID,PAUSED};
     class JInterface{
         public:       
-        typedef tuple <std::string, int32_t, unique_ptr<DataCollectionJobsList> >  my_tuple;
+        typedef tuple <std::string, int32_t, shared_ptr<DataCollectionJobsList> >  my_tuple;
         my_tuple jobContainertple;
         std::vector< my_tuple > jobInstanceVector;
-        std::vector< my_tuple > ::iterator vitr, i;
-        virtual void AddJob(std::string, int32_t, unique_ptr<DataCollectionJobsList>&) = 0;
-        virtual bool GetJob(std::string,unique_ptr<DataCollectionJobsList>&  ) = 0;       
+        std::vector< my_tuple > ::iterator vItr;
+        virtual void AddJob(std::string, int32_t, shared_ptr<DataCollectionJobsList>&) = 0;
+        virtual bool GetJob(std::string,shared_ptr<DataCollectionJobsList>&  ) = 0; 
+        virtual bool RemoveJob(std::string) = 0;    
+             
     };
     class PausedJob:public JInterface{
         public:
         void AddJob(std::string uid, int32_t priority ,\
-                         unique_ptr<DataCollectionJobsList>& jobInstance){                            
-            jobContainertple = make_tuple(uid,priority,move(jobInstance));
-            jobInstanceVector.push_back(move(jobContainertple));
-        }
-        bool GetJob(std::string uid,unique_ptr<DataCollectionJobsList>& jobInstance){   
-            if(jobInstanceVector.empty())  {
-                std::cout << "--vector is empty\n";
+                         shared_ptr<DataCollectionJobsList>& jobInstance){                                                       
+           jobContainertple = make_tuple(uid,priority,move(jobInstance));                        
+           jobInstanceVector.push_back(move(jobContainertple));     
+        }       
+        
+        bool GetJob(std::string uid,shared_ptr<DataCollectionJobsList>& jobInstance){                                 
+             if(jobInstanceVector.empty())  {
+                std::cout << "PauseJob container empty\n";
+                return false;
             }
             else{ 
-            int status = uid.compare(get<0>(jobInstanceVector.at(0)) );
-                if (!status){ 
-                jobInstance = ( move(get<2>(jobInstanceVector.at(0))) );
-                jobInstanceVector.pop_back();
-                if (jobInstance!=nullptr){
-                    cout << "+++"<<jobInstance->job.jobinfo.priority << "\n";
-                }
-                else{
-                 return false;//need to add log
-                }
-                return true;
-                }
+                    for (int j=0;j<jobInstanceVector.size();++j){                    
+                        int status = uid.compare(get<0>(jobInstanceVector.at(j)) );
+                        if (!status){                                            
+                        jobInstance = ((get<2>(jobInstanceVector.at(j))));                                         
+                            return true;
+                        }
+                    } 
             }                
             return false;
-        }       
+        } 
+        bool RemoveJob(std::string uid){
+            int status = -1;
+            if(jobInstanceVector.empty())  {
+                std::cout << "PauseJob container empty\n";
+                return false;
+            }
+            else{
+                for (auto itr = jobInstanceVector.begin(); itr != jobInstanceVector.end(); ++itr){
+                        status = uid.compare(get<0>(*itr));
+                        if( !status){
+                            jobInstanceVector.erase(itr);
+                            return true;
+                        }
+                    }          
+            }
+            return false;
+        }      
     };
 
     class ActiveJob:public JInterface{
         public:
-         void AddJob(std::string uid, int32_t priority , \
-                          unique_ptr<DataCollectionJobsList>& jobInstance){
-            jobContainertple = make_tuple(uid,priority,move(jobInstance));
-        }
-        bool GetJob(std::string uid,unique_ptr<DataCollectionJobsList>& jobInstance){
-                jobInstance = move(get<2>(jobContainertple) );
-                return true;
+        void AddJob(std::string uid, int32_t priority ,\
+                         shared_ptr<DataCollectionJobsList>& jobInstance){                                                       
+           jobContainertple = make_tuple(uid,priority,move(jobInstance));                        
+           jobInstanceVector.push_back(move(jobContainertple));     
+        } 
+        
+       bool GetJob(std::string uid,shared_ptr<DataCollectionJobsList>& jobInstance){                                 
+            if(jobInstanceVector.empty())  {
+                std::cout << "ActiveJob container empty\n";
+                return false;
+            }
+            else{ 
+                    for (int j=0;j<jobInstanceVector.size();++j) {                    
+                        int status = uid.compare(get<0>(jobInstanceVector.at(j)) );
+                        if (!status){                                                 
+                        jobInstance = ((get<2>(jobInstanceVector.at(j))));                                                     
+                        return true;
+                        }
+                    } 
+            }                
+            return false;
+        }  
+        bool RemoveJob(std::string uid){
+            int status = -1;
+            if(jobInstanceVector.empty())  {
+                std::cout << "ActiveJob container empty\n";
+                return false;
+            }
+            else{
+                for (auto itr = jobInstanceVector.begin(); itr != jobInstanceVector.end(); ++itr){
+                        status = uid.compare(get<0>(*itr));
+                        if( !status){
+                            jobInstanceVector.erase(itr);
+                            return true;
+                        }
+                    }          
+            }
+            return false;
         }       
     };
 

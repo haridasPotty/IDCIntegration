@@ -37,9 +37,8 @@ class ReqParser{
   const char path[128]="/home/lenovo/HARI/fsmBook/IDCrelease/IDC_Integration/DataCollector/IDC_Config.data";
 public:
   void set();
-  void Read(DataCollectionJobsList* dcj);
+  void Read(DataCollectionJobsList* dcj,int );  
   bool CheckForNewRequest();
-
   int GetNumberofJobs();
   bool GetJobUUID(std::vector<std::string>&& vectJobUUID);
 
